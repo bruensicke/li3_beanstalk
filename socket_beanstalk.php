@@ -267,7 +267,7 @@ class Socket_Beanstalk {
 	 * @param integer $delay Number of seconds to wait before putting the job in the ready queue
 	 * @return boolean False on error, true on success
 	 */
-	public function release($id, $pri, $delay) {
+	public function release($id, $pri = 2147483647, $delay = 0) {
 		$this->_write(sprintf('release %d %d %d', $id, $pri, $delay));
 		$status = $this->_read();
 
@@ -292,7 +292,7 @@ class Socket_Beanstalk {
 	 * @param mixed $pri
 	 * @return boolean False on error and true on success
 	 */
-	public function bury($id, $pri) {
+	public function bury($id, $pri = 2147483647) {
 		$this->_write(sprintf('bury %d %d', $id, $pri));
 		$status = $this->_read();
 
