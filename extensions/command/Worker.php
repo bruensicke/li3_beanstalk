@@ -183,10 +183,10 @@ class Worker extends \lithium\console\Command {
 		$terminate = function($signal) use ($self) {
 			$self->out('Terminating upon request...');
 
-			if ($self->current) {
-				$this->out("Releasing current job (with id `{$self->current}`)...");
+			if ($self->current_id) {
+				$self->out("Releasing current job (with id `{$self->current_id}`)...");
 				/* Highest priority, delay 10 seconds. */
-				Jobs::release($self->current, 0, 10);
+				Jobs::release($self->current_id, 0, 10);
 			}
 			exit(0);
 		};
