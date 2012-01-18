@@ -51,6 +51,9 @@ class Worker extends \lithium\console\Command {
 
 		if ($signals = $this->signals && extension_loaded('pcntl')) {
 			$this->_installSignalHandlers();
+		} else {
+			// TODO: Jobs::bury($this->current_id);
+			// register_shutdown_function();
 		}
 
 		while (true) {
