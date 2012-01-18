@@ -9,6 +9,33 @@ class Jobs extends \lithium\core\StaticObject {
 
 	protected static $_queue;
 
+	protected $_types = array(
+		'command',
+		'webhook',
+		'modelhook'
+	);
+
+	/**
+	 * Creates a new standard-Job, according to given type.
+	 *
+	 * @param string $type the type of Job to be created
+	 * @param string $data necessary data for that Job, structure depends on type
+	 * @param string $options additional options to be passed
+	 * @return boolean true on success, false otherwise
+	 */
+	public function create($type, $data, $options = array()) {
+		if(!in_array(strtolower($type), self::$_types)) {
+			return false; // invalid type given, try to create a Job via Jobs::put
+		}
+
+		
+	}
+
+	/**
+	 * Returns new Socket_Beanstalk instance, creates one, if necessary
+	 *
+	 * @return object
+	 */
 	protected static function _queue() {
 		if (static::$_queue) {
 			return static::$_queue;
@@ -21,6 +48,13 @@ class Jobs extends \lithium\core\StaticObject {
 		return static::$_queue = $queue;
 	}
 
+	/**
+	 * auxillary method to pass all calls directly to the beanstalk_queue object
+	 *
+	 * @param string $method $method to be called
+	 * @param string $args all arguments as array
+	 * @return mixed
+	 */
 	public static function __callStatic($method, $args) {
 		if (!$queue = static::_queue()) {
 			return false;
