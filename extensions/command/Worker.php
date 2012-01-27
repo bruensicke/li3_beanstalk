@@ -56,16 +56,10 @@ class Worker extends \lithium\console\Command {
 	public function run() {
 		$this->out("Worker `{$this->name}` is starting up...");
 
-		if ($signals = $this->signals && extension_loaded('pcntl')) {
-			$this->_installSignalHandlers();
-		} else {
-			// TODO: Jobs::bury($this->current_id);
-			// register_shutdown_function();
-		}
+		$this->_installSignalHandlers();
 
 		while (true) {
-			if ($signals) {
-				$this->out('Dispatching signals.');
+			if ($this->signals) {
 				pcntl_signal_dispatch();
 			}
 			$this->out('Waiting...');
@@ -200,8 +194,18 @@ class Worker extends \lithium\console\Command {
 			}
 			exit(0);
 		};
-		pcntl_signal(SIGINT, $terminate);
-		pcntl_signal(SIGTERM, $terminate);
+		if ($this->signals && extension_loaded('pcntl')) {
+			declare(ticks = 1);
+			pcntl_signal(SIGINT, $terminate);
+			pcntl_signal(SIGHUP, $terminate);
+			pcntl_signal(SIGTERM, $terminate);
+			$this->signals = true;
+		} else {
+			// TODO: Jobs::bury($this->current_id);
+			register_shutdown_function($terminate);
+			$this->signals = false;
+		}
+
 	}
 
 
