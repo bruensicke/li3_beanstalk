@@ -42,6 +42,13 @@ class Worker extends \lithium\console\Command {
 	public $current_id;
 
 	/**
+	 * How long to sleep
+	 *
+	 * @var integer
+	 */
+	protected $_sleep = 1;
+
+	/**
 	 * Main entry point for li3 commands
 	 *
 	 * @return void
@@ -68,7 +75,7 @@ class Worker extends \lithium\console\Command {
 				$data = unserialize($data['body']);
 			} else {
 				$this->error('INVALID! Got invalid job (queue online?), waiting 5 seconds before I retry.');
-				sleep(5);
+				sleep($this->_sleep);
 				continue;
 			}
 			$this->current_id = $id;
@@ -81,7 +88,7 @@ class Worker extends \lithium\console\Command {
 
 			if(empty($data['type'])) {
 				$this->error('- INVALID - no type set, waiting 5 seconds... ');
-				sleep(5);
+				sleep($this->_sleep);
 				continue;
 			}
 
@@ -89,7 +96,7 @@ class Worker extends \lithium\console\Command {
 
 			if(!is_callable(array($this, $method))) {
 				$this->error('- INVALID - invalid type set, waiting 5 seconds... ');
-				sleep(5);
+				sleep($this->_sleep);
 				continue;
 			}
 
