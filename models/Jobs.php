@@ -27,8 +27,98 @@ class Jobs extends \lithium\core\StaticObject {
 		if(!in_array(strtolower($type), self::$_types)) {
 			return false; // invalid type given, try to create a Job via Jobs::put
 		}
+	}
 
+	/**
+	 * Retrieve a list of Job Items
+	 *
+	 * @param string $type filter to to delayed, buried, ready or all
+	 * @param string $options currently no $options are supported
+	 * @return array a flat array with all Jobs, each Job is an array with
+	 *               keys id, state, type and name
+	 */
+	public static function queue($type = 'all', $options = array()) {
 		
+		$defaults = array(
+			'limit' => 1,
+		);
+		$options = array_merge($defaults, $options);
+
+		$stats = self::statistics();
+
+		$delayed = ($type == 'all' || $type == 'delayed')
+			? self::top('delayed', $options['limit'])
+			: array();
+
+		$buried = ($type == 'all' || $type == 'buried')
+			? self::top('delayed', $options['limit'])
+			: array();
+
+		$ready = ($type == 'all' || $type == 'ready')
+			? self::top('delayed', $options['limit'])
+			: array();
+
+		return array_merge($delayed, $buried, $ready);
+	}
+
+	/**
+	 * Retrieve all vital statistics for current queue
+	 *
+	 * @return array all meta-data for queue, according to 'stats' command
+	 */
+	public static function statistics() {
+		$stats = self::stats();
+		$lines = explode("\n", $stats);
+		$result = array();
+		foreach ($lines as $line) {
+			if(!strpos($line, ':')) {
+				continue;
+			}
+			list($key, $value) = explode(':', $line);
+			$result[$key] = trim($value);
+		}
+		return $result;
+	}
+
+	/**
+	 * Peek into Job-Queue
+	 *
+	 * @param string $type Type of Jobs to retrieve, delayed, buried or ready
+	 * @param string $limit how many Jobs to retrieve
+	 * @return array a flat array with all Jobs, each Job is an array with
+	 *               keys id, state, type and name
+	 */
+	public static function top($type = 'ready', $limit = 50) {
+		$result = array();
+		for ($i=0; $i < $limit; $i++) {
+
+			switch($type) {
+				case 'delayed':
+					$next = Jobs::peekDelayed();
+					break;
+				
+				case 'buried':
+					$next = Jobs::peekBuried();
+					break;
+				
+				case 'ready':
+				default:
+					$next = Jobs::peekReady();
+					break;
+			}
+
+			if(!$next) {
+				continue;
+			}
+			$body = unserialize($next['body']);
+			$result[] = array(
+				'id' => $next['id'],
+				'state' => 'delayed',
+				'type' => $body['type'],
+				'name' => $body['name'],
+			);
+		}
+		return $result;
 	}
 
 	/**
