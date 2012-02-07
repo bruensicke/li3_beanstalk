@@ -32,7 +32,7 @@ class Worker extends \lithium\console\Command {
 	 *
 	 * @var boolean
 	 */
-	public $signals = true;
+	public $signals = false;
 
 	/**
 	 * The job ID of the job currently processed.
