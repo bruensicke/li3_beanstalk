@@ -80,6 +80,9 @@ class Jobs extends \lithium\core\StaticObject {
 		if(empty($result)) {
 			return false;
 		}
+		
+		// additional fields
+		$result['up-since'] = date(DATE_ATOM, strtotime("{$result['uptime']} seconds ago"));
 		return $result;
 	}
 
