@@ -68,7 +68,7 @@ class Worker extends \lithium\console\Command {
 				$id = $data['id'];
 				$data = unserialize($data['body']);
 			} else {
-				$this->error('INVALID! Got invalid job (queue online?), waiting 5 seconds before I retry.');
+				$this->error(sprintf('INVALID! Got invalid job (queue online?), waiting %s seconds before I retry.', $this->_sleep));
 				sleep($this->_sleep);
 				continue;
 			}
