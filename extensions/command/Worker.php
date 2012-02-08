@@ -46,7 +46,7 @@ class Worker extends \lithium\console\Command {
 	 *
 	 * @var integer
 	 */
-	protected $_sleep = 1;
+	protected $_sleep = 2;
 
 	/**
 	 * Main entry point for li3 commands
