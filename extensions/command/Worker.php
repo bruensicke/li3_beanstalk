@@ -184,7 +184,7 @@ class Worker extends \lithium\console\Command {
 		$this->out('Installing signal handlers...');
 
 		$self = $this;
-		$terminate = function($signal) use ($self) {
+		$terminate = function($signal = null) use ($self) {
 			$self->out('Terminating upon request...');
 
 			if ($self->current_id) {
