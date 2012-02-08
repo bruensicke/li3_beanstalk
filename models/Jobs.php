@@ -40,7 +40,7 @@ class Jobs extends \lithium\core\StaticObject {
 	public static function queue($type = 'all', $options = array()) {
 		
 		$defaults = array(
-			'limit' => 1,
+			'limit' => 50,
 		);
 		$options = array_merge($defaults, $options);
 
@@ -51,11 +51,11 @@ class Jobs extends \lithium\core\StaticObject {
 			: array();
 
 		$buried = ($type == 'all' || $type == 'buried')
-			? self::top('delayed', $options['limit'])
+			? self::top('buried', $options['limit'])
 			: array();
 
 		$ready = ($type == 'all' || $type == 'ready')
-			? self::top('delayed', $options['limit'])
+			? self::top('ready', $options['limit'])
 			: array();
 
 		return array_merge($delayed, $buried, $ready);
@@ -76,6 +76,9 @@ class Jobs extends \lithium\core\StaticObject {
 			}
 			list($key, $value) = explode(':', $line);
 			$result[$key] = trim($value);
+		}
+		if(empty($result)) {
+			return false;
 		}
 		return $result;
 	}
