@@ -3,12 +3,22 @@
 namespace li3_beanstalk\models;
 
 use lithium\data\Connections;
-use li3_beanstalk\Socket_Beanstalk;
+use li3_beanstalk\core\BeanstalkSocket;
 
 class Jobs extends \lithium\core\StaticObject {
 
+	/**
+	 * holds connection to beanstalk 
+	 *
+	 * @var object
+	 */
 	protected static $_queue;
 
+	/**
+	 * a list of valid callback types
+	 *
+	 * @var array
+	 */
 	protected $_types = array(
 		'command',
 		'webhook',
@@ -138,7 +148,7 @@ class Jobs extends \lithium\core\StaticObject {
 		}
 		$config = Connections::get('queue', array('config' => true));
 
-		$queue = new Socket_Beanstalk(array('host' => $config['host']));
+		$queue = new BeanstalkSocket(array('host' => $config['host']));
 		$queue->connect();
 
 		return static::$_queue = $queue;

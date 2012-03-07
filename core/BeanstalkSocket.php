@@ -18,9 +18,9 @@
  * @link https://github.com/kr/beanstalkd/blob/master/doc/protocol.txt
  */
 
-namespace li3_beanstalk;
+namespace li3_beanstalk\core;
 
-class Socket_Beanstalk {
+class BeanstalkSocket {
 
 	public $connected = false;
 
