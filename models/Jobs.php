@@ -2,10 +2,31 @@
 
 namespace li3_beanstalk\models;
 
-use lithium\data\Connections;
-use li3_beanstalk\core\BeanstalkSocket;
+use lithium\util\String;
 
 class Jobs extends \lithium\core\StaticObject {
+
+	/**
+	 * a list of valid callback types
+	 *
+	 * @var array
+	 */
+	protected static $_types = array(
+		'command',
+		'webhook',
+		'modelhook'
+	);
+
+	/**
+	 * Class dependencies.
+	 *
+	 * @var array
+	 */
+	protected static $_classes = array(
+		'socket' => 'li3_beanstalk\core\BeanstalkSocket',
+		'connection' => 'lithium\data\Connections',
+		'logger' => 'lithium\analysis\Logger',
+	);
 
 	/**
 	 * holds connection to beanstalk 
@@ -15,28 +36,66 @@ class Jobs extends \lithium\core\StaticObject {
 	protected static $_queue;
 
 	/**
-	 * a list of valid callback types
-	 *
-	 * @var array
-	 */
-	protected $_types = array(
-		'command',
-		'webhook',
-		'modelhook'
-	);
-
-	/**
 	 * Creates a new standard-Job, according to given type.
 	 *
 	 * @param string $type the type of Job to be created
-	 * @param string $data necessary data for that Job, structure depends on type
-	 * @param string $options additional options to be passed
-	 * @return boolean true on success, false otherwise
+	 * @param string $name the type of Job to be created
+	 * @param array $data necessary data for that Job, structure depends on type
+	 * @param array $options additional options to be passed
+	 *              - `'priority'` integer: Weight of priority, should be between
+	 *                0 and 1024, defaults to 100
+	 *              - `'delay'` integer: Seconds to wait before putting the job in the ready queue.
+	 *                The job will be in the "delayed" state during this time, defaults to 0
+	 *              - `'ttr'` integer: Time to run - Number of seconds to allow a worker to run this job.
+	 *                The minimum ttr is 1, defaults to 60*60
+	 * @return integer|boolean $job_id on success, false otherwise
 	 */
-	public function create($type, $data, $options = array()) {
+	public static function create($type, $name, array $body = array(), array $options = array()) {
 		if(!in_array(strtolower($type), self::$_types)) {
 			return false; // invalid type given, try to create a Job via Jobs::put
 		}
+		$defaults = array(
+			'priority' => 100,
+			'delay' => 0,
+			'ttr' => 60*60,
+		);
+		$options += $defaults;
+		$data = compact('type', 'name', 'body');
+		$result = Jobs::put($options['priority'], $options['delay'], $options['ttr'], serialize($data));
+		$logger = static::$_classes['logger'];
+		if (!$result) {
+			$logger::debug(sprintf("FAILED to create Job %s - %s", $type, $name));
+			return false;
+		}
+		$logger::debug(sprintf("Created Job %s - %s", $type, $name));
+		return $result;
+	}
+
+	public static function modelhook($entity, $method, array $params = array(), array $options = array()) {
+		$defaults = array(
+			'model' => $entity->model(),
+			'name' => '{:method} on {:model} with id {:id}',
+			'callback' => '{:model}::{:method}',
+		);
+		$options += $defaults;
+		$options['name'] = String::insert($options['name'], array(
+			'model' => $options['model'],
+			'method' => $method,
+			'id' => (string)$entity->{$entity->key()},
+		));
+		$options['callback'] = String::insert($options['callback'], array(
+			'model' => $options['model'],
+			'method' => $method,
+			'id' => $entity->{$entity->key()},
+		));
+		$body = array(
+			'callback' => $options['callback'],
+			'options' => array(
+				'conditions' => array($entity->key() => (string)$entity->{$entity->key()}),
+			),
+			'data' => $params,
+		);
+		return Jobs::create('Modelhook', $options['name'], $body, $options);
 	}
 
 	/**
@@ -48,11 +107,8 @@ class Jobs extends \lithium\core\StaticObject {
 	 *               keys id, state, type and name
 	 */
 	public static function queue($type = 'all', $options = array()) {
-		
-		$defaults = array(
-			'limit' => 50,
-		);
-		$options = array_merge($defaults, $options);
+		$defaults = array('limit' => 50);
+		$options += $defaults;
 
 		$stats = self::statistics();
 
@@ -146,11 +202,13 @@ class Jobs extends \lithium\core\StaticObject {
 		if (static::$_queue) {
 			return static::$_queue;
 		}
-		$config = Connections::get('queue', array('config' => true));
-
-		$queue = new BeanstalkSocket(array('host' => $config['host']));
+		$logger = static::$_classes['logger'];
+		$connection = static::$_classes['connection'];
+		$socket = static::$_classes['socket'];
+		$config = $connection::get('queue', array('config' => true));
+		$queue = new $socket(array('host' => $config['host']));
 		$queue->connect();
-
+		$logger::debug(sprintf('Established connection to beanstalk host: %s', $config['host']));
 		return static::$_queue = $queue;
 	}
 
