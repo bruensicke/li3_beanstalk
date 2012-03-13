@@ -54,6 +54,7 @@ class Worker extends \lithium\console\Command {
 	 * @return void
 	 */
 	public function run() {
+		set_time_limit(0);
 		$this->out("Worker `{$this->name}` is starting up...");
 
 		$this->_installSignalHandlers();
