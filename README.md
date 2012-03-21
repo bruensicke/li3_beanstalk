@@ -37,29 +37,28 @@ Every Job submitted has the following structure:
 |`name`| no | a description-field for your own notes
 |`body`| yes | serialized array, must contain specific fields, according to type
 
+### Easy method to delay methods called on the model:
 
-You can use the Jobs model like this:
-
-	use li3_beanstalk\models\Jobs;
-
-	if (!$result = Jobs::put(10, 0, 60 * 60, serialize($data))) {
-		throw new ErrorException('Failed to queue job.');
+	/**
+	 * Handles dispatching of methods via beanstalkd
+	 *
+	 * @see li3_beanstalk\models\Jobs::create
+	 * @param string $method The name of the method to call asynchronously.
+	 * @param array $params The parameters to pass to method.
+	 * @param array $options additional options, to be passed into Jobs::create
+	 * @return integer|boolean Returns $job_id on success, false otherwise
+	 */
+	public function invoke_delayed($entity, $method, array $params = array(), array $options = array()) {
+		if (!Libraries::get('li3_beanstalk')) {
+			return;
+		}
+		$jobs = static::$_classes['jobs'];
+		return $jobs::modelhook($entity, $method, $params, $options);
 	}
 
-	SourceRuns::applyFilter('save', function($self, $params, $chain) {
-		if ($params['data']) {
-			$params['entity']->set($params['data']);
-			$params['data'] = array();
-		}
-		if (!$params['entity']->exists()) {
-			// TODO: create Job
-			Job::
-			debug($params);
-			exit;
-		}
-		return $chain->next($self, $params, $chain);
-	});
+In this case, you could call this method like that:
 
+	$entity->invoke_delayed($methodname);
 
 ## Todos
 
