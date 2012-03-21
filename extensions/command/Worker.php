@@ -21,6 +21,13 @@ class Worker extends \lithium\console\Command {
 	public $name = 'worker';
 
 	/**
+	 * Set a timelimit (in seconds), after which this worker will exit itself.
+	 *
+	 * @var integer
+	 */
+	public $timelimit = 3600;
+
+	/**
 	 * Be more verbose?
 	 *
 	 * @var boolean
@@ -49,17 +56,27 @@ class Worker extends \lithium\console\Command {
 	protected $_sleep = 2;
 
 	/**
+	 * holds timestamp of first run to check, if timelimit
+	 * is reached and quit itself
+	 *
+	 * @var integer
+	 */
+	protected $_started;
+
+	/**
 	 * Main entry point for li3 commands
 	 *
 	 * @return void
 	 */
 	public function run() {
 		set_time_limit(0);
+		$this->timelimit += rand(0, 60); // Adding random additional time, to prevent
+		$this->_started = time();        // more workers to quit at the same time.
 		$this->out("Worker `{$this->name}` is starting up...");
 
 		$this->_installSignalHandlers();
 
-		while (true) {
+		while(time() < $this->_started + $this->timelimit) {
 			if ($this->signals) {
 				pcntl_signal_dispatch();
 			}
@@ -111,6 +128,7 @@ class Worker extends \lithium\console\Command {
 			Jobs::delete($this->current_id);
 			$this->out('- DONE!');
 		}
+		$this->out("Worker `{$this->name}` stops... (timelimit reached)");
 	}
 
 	/**
@@ -122,9 +140,7 @@ class Worker extends \lithium\console\Command {
 	 * @return boolean true on success, false otherwise
 	 */
 	public function typeCommand($data = array()) {
-
 		$result = false;
-
 		return $result;
 	}
 
@@ -137,9 +153,7 @@ class Worker extends \lithium\console\Command {
 	 * @return boolean true on success, false otherwise
 	 */
 	public function typeWebhook($data = array()) {
-
 		$result = false;
-
 		return $result;
 	}
 
