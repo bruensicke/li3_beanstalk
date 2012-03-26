@@ -25,11 +25,11 @@ class Jobs extends \lithium\core\StaticObject {
 	protected static $_classes = array(
 		'socket' => 'li3_beanstalk\core\BeanstalkSocket',
 		'connection' => 'lithium\data\Connections',
-		'logger' => 'lithium\analysis\Logger',
+		'logger' => 'lithium\analysis\Logger'
 	);
 
 	/**
-	 * holds connection to beanstalk 
+	 * holds connection to beanstalk
 	 *
 	 * @var object
 	 */
@@ -40,28 +40,28 @@ class Jobs extends \lithium\core\StaticObject {
 	 *
 	 * @param string $type the type of Job to be created
 	 * @param string $name the type of Job to be created
-	 * @param array $data necessary data for that Job, structure depends on type
+	 * @param array $body necessary data for that Job, structure depends on type
 	 * @param array $options additional options to be passed
 	 *              - `'priority'` integer: Weight of priority, should be between
 	 *                0 and 1024, defaults to 100
 	 *              - `'delay'` integer: Seconds to wait before putting the job in the ready queue.
 	 *                The job will be in the "delayed" state during this time, defaults to 0
-	 *              - `'ttr'` integer: Time to run - Number of seconds to allow a worker to run this job.
+	 *              - `'ttr'` integer: Time to run, number of seconds to allow a worker to run job.
 	 *                The minimum ttr is 1, defaults to 60*60
 	 * @return integer|boolean $job_id on success, false otherwise
 	 */
 	public static function create($type, $name, array $body = array(), array $options = array()) {
-		if(!in_array(strtolower($type), self::$_types)) {
+		if (!in_array(strtolower($type), self::$_types)) {
 			return false; // invalid type given, try to create a Job via Jobs::put
 		}
 		$defaults = array(
 			'priority' => 100,
 			'delay' => 0,
-			'ttr' => 60*60,
+			'ttr' => 60 * 60
 		);
 		$options += $defaults;
-		$data = compact('type', 'name', 'body');
-		$result = Jobs::put($options['priority'], $options['delay'], $options['ttr'], serialize($data));
+		$data = serialize(compact('type', 'name', 'body'));
+		$result = Jobs::put($options['priority'], $options['delay'], $options['ttr'], $data);
 		$logger = static::$_classes['logger'];
 		if (!$result) {
 			$logger::debug(sprintf("FAILED to create Job %s - %s", $type, $name));
@@ -71,29 +71,38 @@ class Jobs extends \lithium\core\StaticObject {
 		return $result;
 	}
 
-	public static function modelhook($entity, $method, array $params = array(), array $options = array()) {
+	/**
+	 * Creates a modelhook, which is a delayed invocation of a model method
+	 *
+	 * @param object $entity Instance of current Model Record
+	 * @param string $method name of method to be invoked
+	 * @param array $params an array of parameters to be passed into the method
+	 * @param array $options an array of options
+	 * @return integer|boolean $job_id on success, false otherwise
+	 */
+	public static function modelhook($entity, $method, $params = array(), array $options = array()) {
 		$defaults = array(
 			'model' => $entity->model(),
 			'name' => '{:method} on {:model} with id {:id}',
-			'callback' => '{:model}::{:method}',
+			'callback' => '{:model}::{:method}'
 		);
 		$options += $defaults;
 		$options['name'] = String::insert($options['name'], array(
 			'model' => $options['model'],
 			'method' => $method,
-			'id' => (string)$entity->{$entity->key()},
+			'id' => (string) $entity->{$entity->key()}
 		));
 		$options['callback'] = String::insert($options['callback'], array(
 			'model' => $options['model'],
 			'method' => $method,
-			'id' => $entity->{$entity->key()},
+			'id' => $entity->{$entity->key()}
 		));
 		$body = array(
 			'callback' => $options['callback'],
 			'options' => array(
-				'conditions' => array($entity->key() => (string)$entity->{$entity->key()}),
+				'conditions' => array($entity->key() => (string) $entity->{$entity->key()})
 			),
-			'data' => $params,
+			'data' => $params
 		);
 		return Jobs::create('Modelhook', $options['name'], $body, $options);
 	}
@@ -137,16 +146,16 @@ class Jobs extends \lithium\core\StaticObject {
 		$lines = explode("\n", $stats);
 		$result = array();
 		foreach ($lines as $line) {
-			if(!strpos($line, ':')) {
+			if (!strpos($line, ':')) {
 				continue;
 			}
 			list($key, $value) = explode(':', $line);
 			$result[$key] = trim($value);
 		}
-		if(empty($result)) {
+		if (empty($result)) {
 			return false;
 		}
-		
+
 		// additional fields
 		$result['up-since'] = date(DATE_ATOM, strtotime("{$result['uptime']} seconds ago"));
 		return $result;
@@ -162,24 +171,24 @@ class Jobs extends \lithium\core\StaticObject {
 	 */
 	public static function top($type = 'ready', $limit = 50) {
 		$result = array();
-		for ($i=0; $i < $limit; $i++) {
+		for ($i = 0; $i < $limit; $i++) {
 
-			switch($type) {
+			switch ($type) {
 				case 'delayed':
 					$next = Jobs::peekDelayed();
 					break;
-				
+
 				case 'buried':
 					$next = Jobs::peekBuried();
 					break;
-				
+
 				case 'ready':
 				default:
 					$next = Jobs::peekReady();
 					break;
 			}
 
-			if(!$next) {
+			if (!$next) {
 				continue;
 			}
 			$body = unserialize($next['body']);
@@ -187,7 +196,7 @@ class Jobs extends \lithium\core\StaticObject {
 				'id' => $next['id'],
 				'state' => 'delayed',
 				'type' => $body['type'],
-				'name' => $body['name'],
+				'name' => $body['name']
 			);
 		}
 		return $result;
@@ -226,3 +235,5 @@ class Jobs extends \lithium\core\StaticObject {
 		return call_user_func_array(array($queue, $method), $args);
 	}
 }
+
+?>

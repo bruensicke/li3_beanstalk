@@ -11,15 +11,14 @@
  * @license    http://www.opensource.org/licenses/mit-license.php The MIT License
  */
 
+namespace li3_beanstalk\core;
+
 /**
  * An interface to the beanstalk queue service. Implements the beanstalk
  * protocol spec 1.2.
  *
  * @link https://github.com/kr/beanstalkd/blob/master/doc/protocol.txt
  */
-
-namespace li3_beanstalk\core;
-
 class BeanstalkSocket {
 
 	public $connected = false;
@@ -171,7 +170,7 @@ class BeanstalkSocket {
 		switch ($status) {
 			case 'INSERTED':
 			case 'BURIED':
-				return (integer)strtok(' '); // job id
+				return (integer) strtok(' '); // job id
 			case 'EXPECTED_CRLF':
 			case 'JOB_TOO_BIG':
 			default:
@@ -204,6 +203,11 @@ class BeanstalkSocket {
 
 	/**
 	 * Alias for choose
+	 *
+	 * @see li3_beanstalk\core\BeanstalkSocket::choose()
+	 * @param string $tube A name at most 200 bytes. It specifies the tube to use.
+	 *                     If the tube does not exist, it will be created.
+	 * @return string|boolean False on error otherwise the tube
 	 */
 	public function useTube($tube) {
 		return $this->choose($tube);
@@ -214,7 +218,8 @@ class BeanstalkSocket {
 	/**
 	 * Reserve a job (with a timeout)
 	 *
-	 * @param integer $timeout If given specifies number of seconds to wait for a job. 0 returns immediately.
+	 * @param integer $timeout If given specifies number of seconds to wait for a job.
+	 *                0 returns immediately.
 	 * @return array|false False on error otherwise an array holding job id and body
 	 */
 	public function reserve($timeout = null) {
@@ -228,8 +233,8 @@ class BeanstalkSocket {
 		switch ($status) {
 			case 'RESERVED':
 				return array(
-					'id' => (integer)strtok(' '),
-					'body' => $this->_read((integer)strtok(' '))
+					'id' => (integer) strtok(' '),
+					'body' => $this->_read((integer) strtok(' '))
 				);
 			case 'DEADLINE_SOON':
 			case 'TIMED_OUT':
@@ -339,7 +344,7 @@ class BeanstalkSocket {
 
 		switch ($status) {
 			case 'WATCHING':
-				return (integer)strtok(' ');
+				return (integer) strtok(' ');
 			default:
 				$this->_errors[] = $status;
 				return false;
@@ -358,7 +363,7 @@ class BeanstalkSocket {
 
 		switch ($status) {
 			case 'WATCHING':
-				return (integer)strtok(' ');
+				return (integer) strtok(' ');
 			case 'NOT_IGNORED':
 			default:
 				$this->_errors[] = $status;
@@ -420,8 +425,8 @@ class BeanstalkSocket {
 		switch ($status) {
 			case 'FOUND':
 				return array(
-					'id' => (integer)strtok(' '),
-					'body' => $this->_read((integer)strtok(' '))
+					'id' => (integer) strtok(' '),
+					'body' => $this->_read((integer) strtok(' '))
 				);
 			case 'NOT_FOUND':
 			default:
@@ -445,7 +450,7 @@ class BeanstalkSocket {
 
 		switch ($status) {
 			case 'KICKED':
-				return (integer)strtok(' ');
+				return (integer) strtok(' ');
 			default:
 				$this->_errors[] = $status;
 				return false;
@@ -481,7 +486,7 @@ class BeanstalkSocket {
 
 		switch ($status) {
 			case 'OK':
-				return $this->_read((integer)strtok(' '));
+				return $this->_read((integer) strtok(' '));
 			default:
 				$this->_errors[] = $status;
 				return false;
@@ -516,3 +521,5 @@ class BeanstalkSocket {
 	 */
 	public function listTubesWatched() {}
 }
+
+?>

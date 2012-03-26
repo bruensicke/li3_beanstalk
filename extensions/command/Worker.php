@@ -76,7 +76,7 @@ class Worker extends \lithium\console\Command {
 
 		$this->_installSignalHandlers();
 
-		while(time() < $this->_started + $this->timelimit) {
+		while (time() < $this->_started + $this->timelimit) {
 			if ($this->signals) {
 				pcntl_signal_dispatch();
 			}
@@ -86,19 +86,20 @@ class Worker extends \lithium\console\Command {
 				$id = $data['id'];
 				$data = unserialize($data['body']);
 			} else {
-				$this->error(sprintf('INVALID! Got invalid job (queue online?), waiting %s seconds before I retry.', $this->_sleep));
+				$msg = 'INVALID! invalid job (queue online?), waiting %s seconds before I retry.';
+				$this->error(sprintf($msg, $this->_sleep));
 				sleep($this->_sleep);
 				continue;
 			}
 			$this->current_id = $id;
 			$this->out("FOUND - {$this->current_id} ", array('nl' => $this->verbose));
 
-			if($this->verbose) {
+			if ($this->verbose) {
 				$this->out(var_export($data, true));
 			}
 
 
-			if(empty($data['type'])) {
+			if (empty($data['type'])) {
 				$this->error('- INVALID - no type set, waiting 5 seconds... ');
 				sleep($this->_sleep);
 				continue;
@@ -106,7 +107,7 @@ class Worker extends \lithium\console\Command {
 
 			$method = "type{$data['type']}";
 
-			if(!is_callable(array($this, $method))) {
+			if (!is_callable(array($this, $method))) {
 				$this->error('- INVALID - invalid type set, waiting 5 seconds... ');
 				sleep($this->_sleep);
 				continue;
@@ -114,7 +115,7 @@ class Worker extends \lithium\console\Command {
 
 			$this->out("- TYPE: {$data['type']} ", array('nl' => $this->verbose));
 
-			if(!empty($data['name'])) {
+			if (!empty($data['name'])) {
 				$this->out("\"{$data['name']}\" ", array('nl' => $this->verbose));
 			}
 
@@ -136,7 +137,7 @@ class Worker extends \lithium\console\Command {
 	 *
 	 * NOT IMPLEMENTED, YET!
 	 *
-	 * @param array $data 
+	 * @param array $data
 	 * @return boolean true on success, false otherwise
 	 */
 	public function typeCommand($data = array()) {
@@ -149,11 +150,13 @@ class Worker extends \lithium\console\Command {
 	 *
 	 * NOT IMPLEMENTED, YET!
 	 *
-	 * @param array $data 
+	 * @param array $data
 	 * @return boolean true on success, false otherwise
 	 */
 	public function typeWebhook($data = array()) {
-		$result = false;
+		extract($data);
+		$service = new Service($params);
+		$result = $service->get($url);
 		return $result;
 	}
 
@@ -162,7 +165,7 @@ class Worker extends \lithium\console\Command {
 	 *
 	 * Method will call $model::find('all', $options) and $method on the result-set
 	 *
-	 * @param array $data 
+	 * @param array $data
 	 * @return boolean true on success, false otherwise
 	 */
 	public function typeModelhook($data = array()) {
@@ -171,13 +174,13 @@ class Worker extends \lithium\console\Command {
 
 		// fetch entities, for given conditions
 		$entities = call_user_func_array(array($model, 'find'), array('all', $options));
-		if($entities === false) {
+		if ($entities === false) {
 			// No results, job can be buried
 			$this->error('FAILED!, NO RESULT SET...');
 			Jobs::bury($this->current_id);
 			return false;
 		}
-		
+
 		// call given method on resultset
 		$result = call_user_func_array(array($entities, $method), $data);
 
@@ -237,3 +240,4 @@ class Worker extends \lithium\console\Command {
 	}
 }
 
+?>
