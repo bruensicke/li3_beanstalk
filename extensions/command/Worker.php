@@ -89,6 +89,7 @@ class Worker extends \lithium\console\Command {
 				$msg = 'INVALID! invalid job (queue online?), waiting %s seconds before I retry.';
 				$this->error(sprintf($msg, $this->_sleep));
 				sleep($this->_sleep);
+				$this->_started = time();
 				continue;
 			}
 			$this->current_id = $id;
