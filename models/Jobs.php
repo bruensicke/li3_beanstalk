@@ -169,7 +169,7 @@ class Jobs extends \lithium\core\StaticObject {
 	 * @return array a flat array with all Jobs, each Job is an array with
 	 *               keys id, state, type and name
 	 */
-	public static function top($type = 'ready', $limit = 50) {
+	public static function top($type = 'ready', $limit = 1) {
 		$result = array();
 		for ($i = 0; $i < $limit; $i++) {
 
