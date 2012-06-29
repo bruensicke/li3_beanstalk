@@ -142,7 +142,9 @@ class BeanstalkSocket {
 			}
 			$packet = rtrim($data, "\r\n");
 		} else {
-			$packet = stream_get_line($this->_connection, 16384, "\r\n");
+			// does not work on php 5.3.10, see https://bugs.php.net/bug.php?id=60817
+			// $packet = stream_get_line($this->_connection, 16384, "\r\n");
+			$packet = trim(fgets($this->_connection, 16534));
 		}
 		return $packet;
 	}
